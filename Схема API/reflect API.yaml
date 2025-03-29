@@ -1,0 +1,776 @@
+openapi: 3.0.3
+info:
+  title: Emotion Tracking API
+  description: API для трекинга эмоционального состояния
+  version: 1.0.0
+servers:
+  - url: https://reflect.ru/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Регистрация и авторизация
+  - name: Emotions
+    description: Управление эмоциональными состояниями
+  - name: Friends
+    description: Управление друзьями
+  - name: AI
+    description: Аналитика и рекомендации
+  - name: Profile
+    description: Управление профилем
+  - name: Privacy
+    description: Настройки приватности
+  - name: Notifications
+    description: Управление уведомлениями
+  - name: Premium
+    description: Премиум подписка
+  - name: Admin
+    description: Администрирование
+
+paths:
+  # ==================== Аутентификация ====================
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Регистрация через email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+              required: [email, password]
+      responses:
+        '201':
+          description: Успешная регистрация
+    
+  /auth/auth:
+    post:
+      tags: [Authentication]
+      summary: Авторизация через email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+              required: [email, password]
+      responses:
+        '201':
+          description: Успешная регистрация
+
+  /auth/oauth/vk:
+    post:
+      tags: [Authentication]
+      summary: Регистрация через ВКонтакте
+      responses:
+        '200':
+          description: Успешная авторизация
+
+  # ==================== Эмоции ====================
+  /emotions/create:
+    post:
+      tags: [Emotions]
+      summary: Создать запись эмоции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmotionCreate'
+      responses:
+        '201':
+          description: Запись создана
+          
+  /emotions:
+    get:
+      tags: [Emotions]
+      summary: Получить историю эмоций
+      responses:
+        '200':
+          description: Список записей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Emotion'
+
+  /emotions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID эмоции
+        schema:
+          type: integer
+    patch:
+      tags: [Emotions]
+      summary: Обновить запись эмоции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmotionUpdate'
+      responses:
+        '200':
+          description: Запись обновлена
+
+    delete:
+      tags: [Emotions]
+      summary: Удалить запись эмоции
+      responses:
+        '204':
+          description: Запись удалена
+          
+    get:
+      tags: [Emotions]
+      summary: Получить запись одной эмоции
+      responses:
+        '200':
+          description: Эмоция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Emotion'
+
+  /emotions/streak:
+    get:
+      tags: [Emotions]
+      summary: Получить текущий стрик
+      responses:
+        '200':
+          description: Дней подряд
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  streak:
+                    type: integer
+
+  /emotions/statistics:
+    get:
+      tags: [Emotions]
+      summary: Статистика по эмоциям
+      responses:
+        '200':
+          description: Статистика
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionStats'
+
+  # ==================== Друзья ====================
+  /friends:
+    get:
+      tags: [Friends]
+      summary: Получить список друзей
+      responses:
+        '200':
+          description: Список друзей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Friend'
+          
+  /friends/{friend_id}:
+    parameters:
+      - name: friend_id
+        in: path
+        required: true
+        description: ID друга
+        schema:
+          type: integer
+    get:
+      tags: [Friends]
+      summary: Получить информацию по другу
+      responses:
+        '200':
+          description: Информация о друге
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Friend'
+          
+    delete:
+      tags: [Friends]
+      summary: Удалить друга
+      responses:
+        '204':
+          description: Друг удален
+
+  /friends/accept:
+    post:
+      tags: [Friends]
+      summary: Принять запрос в друзья
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                friend_id:
+                  type: integer
+              required: [friend_id]
+      responses:
+        '200':
+          description: Друг добавлен
+    
+  /friends/{friend_id}/last_emotion:
+    parameters:
+      - name: friend_id
+        in: path
+        required: true
+        description: ID друга
+        schema:
+          type: integer
+    get:
+      tags: [Friends]
+      summary: Получить последнее состояние друга
+      responses:
+        '200':
+          description: Состояние друга
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendEmotion'
+                
+  /friends/{friend_id}/statistic:
+    parameters:
+      - name: friend_id
+        in: path
+        required: true
+        description: ID друга
+        schema:
+          type: integer
+    get:
+      tags: [Friends]
+      summary: Получить статистику друга
+      responses:
+        '200':
+          description: Статистика друга
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FriendStatistics'
+
+  # ==================== AI ====================
+  /ai/trends:
+    get:
+      tags: [AI]
+      summary: Анализ трендов
+      parameters:
+        - name: period
+          in: query
+          description: Период в днях
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Анализ тренда
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendAnalysis'
+
+  /ai/advice:
+    get:
+      tags: [AI]
+      summary: Получить совет
+      responses:
+        '200':
+          description: AI совет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAdvice'
+
+  # ==================== Профиль ====================
+  /profile/{user_id}:
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID пользователя
+        schema:
+          type: integer
+    get:
+      tags: [Profile]
+      summary: Получить данные профиля
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileGet'  
+
+    patch:
+      tags: [Profile]
+      summary: Обновить профиль
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Профиль обновлен
+
+    delete:
+      tags: [Profile]
+      summary: Удалить профиль
+      responses:
+        '204':
+          description: Профиль удален
+
+  # ==================== Приватность ====================
+  /privacy/history:
+    patch:
+      tags: [Privacy]
+      summary: Настроить видимость истории
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacySettings'
+      responses:
+        '200':
+          description: Настройки сохранены
+
+  # ==================== Уведомления ====================
+  /notifications:
+    patch:
+      tags: [Notifications]
+      summary: Настроить уведомления
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettings'
+      responses:
+        '200':
+          description: Настройки сохранены
+
+  # ==================== Премиум ====================
+  /premium/subscribe:
+    post:
+      tags: [Premium]
+      summary: Активировать премиум
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [monthly, yearly]
+              required: [plan]
+      responses:
+        '200':
+          description: Премиум активирован
+
+  # ==================== Админка ====================
+  /admin/complaints:
+    get:
+      tags: [Admin]
+      summary: Получить список жалоб
+      responses:
+        '200':
+          description: Список жалоб
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Complaint'
+
+  /admin/block/{user_id}:
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID пользователя
+        schema:
+          type: integer
+    post:
+      tags: [Admin]
+      summary: Заблокировать пользователя
+      responses:
+        '200':
+          description: Пользователь заблокирован
+
+components:
+  schemas:
+    # Схемы для эмоций
+    EmotionCreate:
+      type: object
+      properties:
+        emotion_type:
+          type: string
+          enum: [happy, sad, angry, anxious, calm]
+          description: Тип эмоции
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Интенсивность эмоции (1-10)
+        notes:
+          type: string
+          description: Комментарий к эмоции
+        triggers:
+          type: array
+          items:
+            type: string
+          description: Триггеры эмоции
+      required: [emotion_type, intensity]
+
+    Emotion:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Уникальный ID записи
+        user_id:
+          type: integer
+          description: ID пользователя
+        emotion_type:
+          type: string
+          enum: [happy, sad, angry, anxious, calm]
+          description: Тип эмоции
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Интенсивность эмоции (1-10)
+        notes:
+          type: string
+          description: Комментарий к эмоции
+        triggers:
+          type: array
+          items:
+            type: string
+          description: Триггеры эмоции
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Дата и время обновления записи
+      required: [id, user_id, emotion_type, intensity, created_at]
+
+    EmotionUpdate:
+      type: object
+      properties:
+        emotion_type:
+          type: string
+          enum: [happy, sad, angry, anxious, calm]
+          description: Тип эмоции
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Интенсивность эмоции (1-10)
+        notes:
+          type: string
+          description: Комментарий к эмоции
+        triggers:
+          type: array
+          items:
+            type: string
+          description: Триггеры эмоции
+
+    EmotionStats:
+      type: object
+      properties:
+        most_common_emotion:
+          type: string
+          description: Наиболее частая эмоция
+        average_intensity:
+          type: number
+          format: float
+          description: Средняя интенсивность эмоций
+        emotion_count:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Количество разных эмоций
+        trends:
+          type: object
+          properties:
+            happiness_trend:
+              type: string
+              enum: [increasing, decreasing, stable]
+              description: Тренд счастья
+            anxiety_trend:
+              type: string
+              enum: [increasing, decreasing, stable]
+              description: Тренд тревожности
+          description: Тренды эмоций
+
+    # Схемы для друзей
+    Friend:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        avatar:
+          type: string
+          format: uri
+          description: Ссылка на аватар
+        status:
+          type: string
+          enum: [online, offline]
+          description: Статус друга
+        last_seen:
+          type: string
+          format: date-time
+          description: Последний раз онлайн
+      required: [id, username]
+
+    FriendEmotion:
+      type: object
+      properties:
+        friend_id:
+          type: integer
+          description: ID друга
+        emotion_type:
+          type: string
+          enum: [happy, sad, angry, anxious, calm]
+          description: Тип эмоции
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Интенсивность эмоции (1-10)
+        created_at:
+          type: string
+          format: date-time
+          description: Дата и время создания записи
+      required: [friend_id, emotion_type, intensity, created_at]
+
+    FriendStatistics:
+      type: object
+      properties:
+        friend_id:
+          type: integer
+          description: ID друга
+        most_common_emotion:
+          type: string
+          description: Наиболее частая эмоция
+        average_intensity:
+          type: number
+          format: float
+          description: Средняя интенсивность эмоций
+        streak:
+          type: integer
+          description: Текущий стрик записей
+      required: [friend_id, most_common_emotion, average_intensity]
+
+    # Схемы для AI
+    TrendAnalysis:
+      type: object
+      properties:
+        period:
+          type: integer
+          description: Анализируемый период в днях
+        emotion_trends:
+          type: array
+          items:
+            type: object
+            properties:
+              emotion:
+                type: string
+                description: Тип эмоции
+              trend:
+                type: string
+                enum: [increasing, decreasing, stable]
+                description: Тренд изменения
+              change_percent:
+                type: number
+                format: float
+                description: Процент изменения
+            required: [emotion, trend]
+        correlations:
+          type: array
+          items:
+            type: object
+            properties:
+              trigger:
+                type: string
+                description: Триггер
+              emotion:
+                type: string
+                description: Связанная эмоция
+              strength:
+                type: number
+                format: float
+                minimum: 0
+                maximum: 1
+                description: Сила корреляции (0-1)
+            required: [trigger, emotion, strength]
+      required: [period, emotion_trends]
+
+    AIAdvice:
+      type: object
+      properties:
+        advice:
+          type: string
+          description: Текст совета
+        based_on:
+          type: array
+          items:
+            type: string
+          description: На чем основан совет
+        recommended_activities:
+          type: array
+          items:
+            type: string
+          description: Рекомендуемые активности
+      required: [advice]
+
+    # Схемы для профиля
+    ProfileGet:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID пользователя
+        username:
+          type: string
+          description: Имя пользователя
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+        avatar:
+          type: string
+          format: uri
+          description: Ссылка на аватар
+        registration_date:
+          type: string
+          format: date-time
+          description: Дата регистрации
+        streak:
+          type: integer
+          description: Текущий стрик
+        premium:
+          type: boolean
+          description: Премиум статус
+      required: [id, username, email, registration_date, premium]
+
+    ProfileUpdate:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Имя пользователя
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+        avatar:
+          type: string
+          format: uri
+          description: Ссылка на аватар
+        password:
+          type: string
+          description: Новый пароль
+          minLength: 8
+
+    # Схемы для приватности
+    PrivacySettings:
+      type: object
+      properties:
+        history_visibility:
+          type: string
+          enum: [public, friends, private]
+          description: Видимость истории эмоций
+        profile_visibility:
+          type: string
+          enum: [public, friends, private]
+          description: Видимость профиля
+        stats_visibility:
+          type: string
+          enum: [public, friends, private]
+          description: Видимость статистики
+      required: [history_visibility, profile_visibility, stats_visibility]
+
+    # Схемы для уведомлений
+    NotificationSettings:
+      type: object
+      properties:
+        friend_requests:
+          type: boolean
+          description: Уведомления о запросах в друзья
+        friend_emotions:
+          type: boolean
+          description: Уведомления о новых эмоциях друзей
+        streak_reminders:
+          type: boolean
+          description: Напоминания о стрике
+        advice:
+          type: boolean
+          description: Уведомления с советами
+      required: [friend_requests, friend_emotions, streak_reminders, advice]
+
+    # Схемы для админки
+    Complaint:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID жалобы
+        reporter_id:
+          type: integer
+          description: ID пользователя, отправившего жалобу
+        reported_user_id:
+          type: integer
+          description: ID пользователя, на которого пожаловались
+        reason:
+          type: string
+          description: Причина жалобы
+        details:
+          type: string
+          description: Детали жалобы
+        created_at:
+          type: string
+          format: date-time
+          description: Дата создания жалобы
+        status:
+          type: string
+          enum: [new, in_progress, resolved, rejected]
+          description: Статус жалобы
+      required: [id, reporter_id, reported_user_id, reason, created_at, status]
