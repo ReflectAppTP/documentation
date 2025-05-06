@@ -29,7 +29,7 @@ tags:
 
 paths:
   # ==================== Аутентификация ====================
-  /auth/register:
+  /api/authReflect/register:
     post:
       tags: [Authentication]
       summary: Регистрация через email
@@ -43,15 +43,17 @@ paths:
                 email:
                   type: string
                   format: email
+                username:
+                  type: string
                 password:
                   type: string
                   minLength: 8
-              required: [email, password]
+              required: [email, username, password]
       responses:
         '201':
-          description: Успешная регистрация
+          description: Успешная регистрация, вывод json файла с данными пользователя и сообщением "User created successfully"
     
-  /auth/auth:
+  /api/authReflect/login:
     post:
       tags: [Authentication]
       summary: Авторизация через email
@@ -70,10 +72,10 @@ paths:
                   minLength: 8
               required: [email, password]
       responses:
-        '201':
-          description: Успешная регистрация
-
-  /auth/oauth/vk:
+        '200':
+          description: Успешная авторизация, вывод json файла в виде {"refresh": "", "access": ""} с соответствующими токенами
+          
+  /api/authReflect/oauth/vk:
     post:
       tags: [Authentication]
       summary: Регистрация через ВКонтакте
@@ -82,74 +84,117 @@ paths:
           description: Успешная авторизация
 
   # ==================== Эмоции ====================
-  /emotions/create:
-    post:
-      tags: [Emotions]
-      summary: Создать запись эмоции
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmotionCreate'
-      responses:
-        '201':
-          description: Запись создана
-          
-  /emotions:
+  /api/emotional-states/:
     get:
-      tags: [Emotions]
-      summary: Получить историю эмоций
+      tags: [Emotional States]
+      summary: Получить все эмоциональные состояния
+      description: Возвращает список всех доступных эмоциональных состояний с тегами
       responses:
         '200':
-          description: Список записей
+          description: Успешный запрос
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Emotion'
-
-  /emotions/{id}:
-    parameters:
-      - name: id
-        in: path
-        required: true
-        description: ID эмоции
-        schema:
-          type: integer
-    patch:
-      tags: [Emotions]
-      summary: Обновить запись эмоции
+                  $ref: '#/components/schemas/EmotionalState'
+    
+    post:
+      tags: [Emotional States]
+      summary: Создать новую запись об эмоциональном состоянии
+      description: Создает новую запись о текущем эмоциональном состоянии пользователя
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EmotionUpdate'
+              $ref: '#/components/schemas/EmotionalStateCreate'
       responses:
-        '200':
-          description: Запись обновлена
-
-    delete:
-      tags: [Emotions]
-      summary: Удалить запись эмоции
-      responses:
-        '204':
-          description: Запись удалена
-          
-    get:
-      tags: [Emotions]
-      summary: Получить запись одной эмоции
-      responses:
-        '200':
-          description: Эмоция
+        '201':
+          description: Запись успешно создана
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Emotion'
+                $ref: '#/components/schemas/EmotionalState'
+        '400':
+          description: Неверные входные данные
+        '401':
+          description: Не авторизован
 
-  /emotions/streak:
+  /api/emotional-states/{id}:
+    get:
+      tags: [Emotional States]
+      summary: Получить конкретную запись
+      description: Возвращает запись об эмоциональном состоянии по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionalState'
+        '404':
+          description: Запись не найдена
+        '401':
+          description: Не авторизован
+    
+    put:
+      tags: [Emotional States]
+      summary: Обновить запись
+      description: Обновляет существующую запись об эмоциональном состоянии
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmotionalStateUpdate'
+      responses:
+        '200':
+          description: Запись успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionalState'
+        '400':
+          description: Неверные входные данные
+        '401':
+          description: Не авторизован
+        '404':
+          description: Запись не найдена
+    
+    delete:
+      tags: [Emotional States]
+      summary: Удалить запись
+      description: Удаляет запись об эмоциональном состоянии
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Запись успешно удалена
+        '401':
+          description: Не авторизован
+        '404':
+          description: Запись не найдена
+
+  /api/emotional-states/streak:
     get:
       tags: [Emotions]
       summary: Получить текущий стрик
@@ -164,7 +209,7 @@ paths:
                   streak:
                     type: integer
 
-  /emotions/statistics:
+  /api/emotional-states/statistics:
     get:
       tags: [Emotions]
       summary: Статистика по эмоциям
@@ -177,7 +222,7 @@ paths:
                 $ref: '#/components/schemas/EmotionStats'
 
   # ==================== Друзья ====================
-  /friends:
+  /api/friends:
     get:
       tags: [Friends]
       summary: Получить список друзей
@@ -191,7 +236,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Friend'
           
-  /friends/{friend_id}:
+  /api/friends/{friend_id}:
     parameters:
       - name: friend_id
         in: path
@@ -217,7 +262,7 @@ paths:
         '204':
           description: Друг удален
 
-  /friends/accept:
+  /api/friends/accept:
     post:
       tags: [Friends]
       summary: Принять запрос в друзья
@@ -235,7 +280,7 @@ paths:
         '200':
           description: Друг добавлен
     
-  /friends/{friend_id}/last_emotion:
+  /api/friends/{friend_id}/last_emotion:
     parameters:
       - name: friend_id
         in: path
@@ -254,7 +299,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/FriendEmotion'
                 
-  /friends/{friend_id}/statistic:
+  /api/friends/{friend_id}/statistic:
     parameters:
       - name: friend_id
         in: path
@@ -274,7 +319,7 @@ paths:
                 $ref: '#/components/schemas/FriendStatistics'
 
   # ==================== AI ====================
-  /ai/trends:
+  /api/ai/trends:
     get:
       tags: [AI]
       summary: Анализ трендов
@@ -294,7 +339,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TrendAnalysis'
 
-  /ai/advice:
+  /api/ai/advice:
     get:
       tags: [AI]
       summary: Получить совет
@@ -307,7 +352,7 @@ paths:
                 $ref: '#/components/schemas/AIAdvice'
 
   # ==================== Профиль ====================
-  /profile/{user_id}:
+  /api/profileReflect/{user_id}:
     parameters:
       - name: user_id
         in: path
@@ -347,7 +392,7 @@ paths:
           description: Профиль удален
 
   # ==================== Приватность ====================
-  /privacy/history:
+  /api/privacy/history:
     patch:
       tags: [Privacy]
       summary: Настроить видимость истории
@@ -362,7 +407,7 @@ paths:
           description: Настройки сохранены
 
   # ==================== Уведомления ====================
-  /notifications:
+  /api/notifications:
     patch:
       tags: [Notifications]
       summary: Настроить уведомления
@@ -377,7 +422,7 @@ paths:
           description: Настройки сохранены
 
   # ==================== Премиум ====================
-  /premium/subscribe:
+  /api/premium/subscribe:
     post:
       tags: [Premium]
       summary: Активировать премиум
@@ -397,7 +442,7 @@ paths:
           description: Премиум активирован
 
   # ==================== Админка ====================
-  /admin/complaints:
+  /api/admin/complaints:
     get:
       tags: [Admin]
       summary: Получить список жалоб
@@ -411,7 +456,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Complaint'
 
-  /admin/block/{user_id}:
+  /api/admin/block/{user_id}:
     parameters:
       - name: user_id
         in: path
